@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genre Master - Music Study App</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #1a0b2e;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const MusicGenreApp = () => {
+            const [currentView, setCurrentView] = useState('home');
+            const [selectedGenre, setSelectedGenre] = useState(null);
+            const [selectedQuiz, setSelectedQuiz] = useState(null);
+            const [quizScore, setQuizScore] = useState(0);
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [userAnswers, setUserAnswers] = useState([]);
+            const [badges, setBadges] = useState([]);
+            const [studyProgress, setStudyProgress] = useState({});
+            const [completedQuizzes, setCompletedQuizzes] = useState([]);
+            const [shuffledQuestions, setShuffledQuestions] = useState([]);
+
+            // Shuffle function
+            const shuffleArray = (array) => {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            };
+
+            const genres = [
+                {
+                    id: 'baroque',
+                    name: 'Baroque',
+                    period: '1600-1750',
+                    color: '#FF6B9D',
+                    characteristics: ['Ornate melodies', 'Basso continuo', 'Terraced dynamics', 'Polyphonic texture'],
+                    keyArtists: ['J.S. Bach', 'Vivaldi', 'Handel'],
+                    keyWorks: ['Brandenburg Concertos', 'The Four Seasons', 'Messiah'],
+                    description: 'Characterized by elaborate ornamentation, contrast, and expressive use of harmony and counterpoint.',
+                    listeningTips: 'Listen for the harpsichord and the continuous bass line driving the music forward.',
+                    listeningLinks: [
+                        { title: 'Bach - Brandenburg Concerto No. 3', url: 'https://www.youtube.com/watch?v=pdsyNwUoON0' },
+                        { title: 'Vivaldi - The Four Seasons (Spring)', url: 'https://www.youtube.com/watch?v=GRxofEmo3HA' },
+                        { title: 'Handel - Messiah (Hallelujah Chorus)', url: 'https://www.youtube.com/watch?v=IUZEtVbJT5c' },
+                        { title: 'Bach - Toccata and Fugue in D minor', url: 'https://www.youtube.com/watch?v=ho9rZjlsyYY' },
+                        { title: 'Pachelbel - Canon in D', url: 'https://www.youtube.com/watch?v=NlprozGcs80' }
+                    ]
+                },
+                {
+                    id: 'classical',
+                    name: 'Classical Period',
+                    period: '1750-1820',
+                    color: '#4ECDC4',
+                    characteristics: ['Clear melody', 'Alberti bass', 'Balanced phrases', 'Sonata form'],
+                    keyArtists: ['Mozart', 'Haydn', 'Early Beethoven'],
+                    keyWorks: ['Eine kleine Nachtmusik', 'Symphony No. 94 "Surprise"', 'Piano Sonata No. 16'],
+                    description: 'Emphasized clarity, balance, and formal structure with elegant, singable melodies.',
+                    listeningTips: 'Notice the clear, balanced phrases and how themes are developed and varied.',
+                    listeningLinks: [
+                        { title: 'Mozart - Eine kleine Nachtmusik', url: 'https://www.youtube.com/watch?v=o1FSN8_pp_o' },
+                        { title: 'Haydn - Symphony No. 94 "Surprise"', url: 'https://www.youtube.com/watch?v=lLjwkamp3lI' },
+                        { title: 'Mozart - Piano Sonata No. 16', url: 'https://www.youtube.com/watch?v=8KFvHzFChbE' },
+                        { title: 'Beethoven - Symphony No. 5', url: 'https://www.youtube.com/watch?v=_4IRMYuE1hI' },
+                        { title: 'Mozart - Symphony No. 40', url: 'https://www.youtube.com/watch?v=JTc1mDieQI8' }
+                    ]
+                },
+                {
+                    id: 'romantic',
+                    name: 'Romantic',
+                    period: '1820-1900',
+                    color: '#FF6B6B',
+                    characteristics: ['Emotional expression', 'Expanded orchestra', 'Rubato', 'Programme music'],
+                    keyArtists: ['Chopin', 'Tchaikovsky', 'Wagner'],
+                    keyWorks: ['Nocturnes', 'Swan Lake', 'Ring Cycle'],
+                    description: 'Focused on emotional expression, individualism, and the exploration of new harmonic languages.',
+                    listeningTips: 'Feel the emotional intensity and listen for how the music tells a story or paints a picture.',
+                    listeningLinks: [
+                        { title: 'Chopin - Nocturne Op. 9 No. 2', url: 'https://www.youtube.com/watch?v=9E6b3swbnWg' },
+                        { title: 'Tchaikovsky - Swan Lake', url: 'https://www.youtube.com/watch?v=9cNQFB0TDfY' },
+                        { title: 'Wagner - Ride of the Valkyries', url: 'https://www.youtube.com/watch?v=GGU1P6lBW6Q' },
+                        { title: 'Brahms - Hungarian Dance No. 5', url: 'https://www.youtube.com/watch?v=3X9LvC9WkkQ' },
+                        { title: 'Liszt - La Campanella', url: 'https://www.youtube.com/watch?v=H1Dvg2MxQn8' }
+                    ]
+                },
+                {
+                    id: 'jazz',
+                    name: 'Jazz',
+                    period: '1900s-present',
+                    color: '#FFD93D',
+                    characteristics: ['Swing rhythm', 'Improvisation', 'Blue notes', 'Call and response'],
+                    keyArtists: ['Louis Armstrong', 'Miles Davis', 'John Coltrane'],
+                    keyWorks: ['What a Wonderful World', 'Kind of Blue', 'Giant Steps'],
+                    description: 'Born in New Orleans, jazz features improvisation, swing rhythms, and complex harmonies.',
+                    listeningTips: 'Listen for the interplay between musicians and the spontaneous improvised solos.',
+                    listeningLinks: [
+                        { title: 'Louis Armstrong - What a Wonderful World', url: 'https://www.youtube.com/watch?v=VqhCQZaH4Vs' },
+                        { title: 'Miles Davis - So What', url: 'https://www.youtube.com/watch?v=zqNTltOGh5c' },
+                        { title: 'John Coltrane - Giant Steps', url: 'https://www.youtube.com/watch?v=30FTr6G53VU' },
+                        { title: 'Duke Ellington - Take the A Train', url: 'https://www.youtube.com/watch?v=cb2w2m1JmCY' },
+                        { title: 'Charlie Parker - Ornithology', url: 'https://www.youtube.com/watch?v=5K6JqskJGLE' }
+                    ]
+                },
+                {
+                    id: 'blues',
+                    name: 'Blues',
+                    period: '1890s-present',
+                    color: '#6C5CE7',
+                    characteristics: ['12-bar structure', 'Blue notes', 'AAB lyric pattern', 'Expressive vocals'],
+                    keyArtists: ['B.B. King', 'Muddy Waters', 'Robert Johnson'],
+                    keyWorks: ['The Thrill is Gone', 'Hoochie Coochie Man', 'Cross Road Blues'],
+                    description: 'Originated in African American communities, expressing both sorrow and joy through distinctive scales.',
+                    listeningTips: 'Pay attention to the guitar bends and the emotional delivery of the vocals.',
+                    listeningLinks: [
+                        { title: 'B.B. King - The Thrill is Gone', url: 'https://www.youtube.com/watch?v=oica5jG7FpU' },
+                        { title: 'Muddy Waters - Hoochie Coochie Man', url: 'https://www.youtube.com/watch?v=9fUU7FNTCxE' },
+                        { title: 'Robert Johnson - Cross Road Blues', url: 'https://www.youtube.com/watch?v=Yd60nI4sa9A' },
+                        { title: 'Howlin\' Wolf - Smokestack Lightning', url: 'https://www.youtube.com/watch?v=9Ri7TcukAJ8' },
+                        { title: 'Etta James - I\'d Rather Go Blind', url: 'https://www.youtube.com/watch?v=u9sq3ME0JHQ' }
+                    ]
+                },
+                {
+                    id: 'rock',
+                    name: 'Rock & Roll',
+                    period: '1950s-present',
+                    color: '#FF8B94',
+                    characteristics: ['Strong backbeat', 'Electric guitars', 'Verse-chorus form', 'Rebellious energy'],
+                    keyArtists: ['Chuck Berry', 'Elvis Presley', 'The Beatles'],
+                    keyWorks: ['Johnny B. Goode', 'Jailhouse Rock', 'A Hard Day\'s Night'],
+                    description: 'Emerged from blues and country, rock revolutionized popular music with electric instruments and youth culture.',
+                    listeningTips: 'Feel the driving beat and the energy that made this music so revolutionary.',
+                    listeningLinks: [
+                        { title: 'Chuck Berry - Johnny B. Goode', url: 'https://www.youtube.com/watch?v=ZFo8-JqzSCM' },
+                        { title: 'Elvis Presley - Jailhouse Rock', url: 'https://www.youtube.com/watch?v=gj0Rz-uP4Mk' },
+                        { title: 'The Beatles - A Hard Day\'s Night', url: 'https://www.youtube.com/watch?v=Yjyj8qnqkb4' },
+                        { title: 'Led Zeppelin - Stairway to Heaven', url: 'https://www.youtube.com/watch?v=QkF3oxziUI4' },
+                        { title: 'Queen - Bohemian Rhapsody', url: 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ' }
+                    ]
+                },
+                {
+                    id: 'hiphop',
+                    name: 'Hip-Hop',
+                    period: '1970s-present',
+                    color: '#A29BFE',
+                    characteristics: ['Rapping/MCing', 'Sampling', 'Beatboxing', 'Breakbeats'],
+                    keyArtists: ['Grandmaster Flash', 'Run-DMC', 'Nas'],
+                    keyWorks: ['The Message', 'Walk This Way', 'Illmatic'],
+                    description: 'Born in the Bronx, hip-hop combines rhythmic vocal delivery with sampled beats and DJ techniques.',
+                    listeningTips: 'Listen for the rhythm of the words and how samples are creatively incorporated.',
+                    listeningLinks: [
+                        { title: 'Grandmaster Flash - The Message', url: 'https://www.youtube.com/watch?v=PobrSpMwKk4' },
+                        { title: 'Run-DMC - Walk This Way', url: 'https://www.youtube.com/watch?v=4B_UYYPb-Gk' },
+                        { title: 'Nas - NY State of Mind', url: 'https://www.youtube.com/watch?v=UKjj4hk0pV4' },
+                        { title: 'Public Enemy - Fight the Power', url: 'https://www.youtube.com/watch?v=8PaoLy7PHwk' },
+                        { title: 'A Tribe Called Quest - Can I Kick It?', url: 'https://www.youtube.com/watch?v=71ubKHzujy8' }
+                    ]
+                },
+                {
+                    id: 'electronic',
+                    name: 'Electronic/EDM',
+                    period: '1980s-present',
+                    color: '#00D9FF',
+                    characteristics: ['Synthesizers', 'Drum machines', 'Repetitive beats', 'Digital production'],
+                    keyArtists: ['Kraftwerk', 'Daft Punk', 'Aphex Twin'],
+                    keyWorks: ['Trans-Europe Express', 'One More Time', 'Windowlicker'],
+                    description: 'Music created using electronic instruments and technology, from ambient to dance music.',
+                    listeningTips: 'Notice the layered synthesizer textures and the precision of programmed beats.',
+                    listeningLinks: [
+                        { title: 'Kraftwerk - Trans-Europe Express', url: 'https://www.youtube.com/watch?v=XMVokT5e0zs' },
+                        { title: 'Daft Punk - One More Time', url: 'https://www.youtube.com/watch?v=FGBhQbmPwH8' },
+                        { title: 'Aphex Twin - Windowlicker', url: 'https://www.youtube.com/watch?v=5ZT3gTu4Sjw' },
+                        { title: 'Deadmau5 - Strobe', url: 'https://www.youtube.com/watch?v=tKi9Z-f6qX4' },
+                        { title: 'The Chemical Brothers - Block Rockin\' Beats', url: 'https://www.youtube.com/watch?v=iTxOKsyZ0Lw' }
+                    ]
+                },
+                {
+                    id: 'ambient',
+                    name: 'Ambient',
+                    period: '1970s-present',
+                    color: '#95E1D3',
+                    characteristics: ['Atmospheric soundscapes', 'Minimal rhythm', 'Textural focus', 'Mood emphasis'],
+                    keyArtists: ['Brian Eno', 'Stars of the Lid', 'Sigur Rós'],
+                    keyWorks: ['Music for Airports', 'The Tired Sounds Of', 'Ágætis byrjun'],
+                    description: 'Emphasizes tone and atmosphere over traditional structure, creating immersive sonic environments.',
+                    listeningTips: 'Focus on the overall texture and mood rather than melody or rhythm. Let the soundscape wash over you.',
+                    listeningLinks: [
+                        { title: 'Brian Eno - Music for Airports', url: 'https://www.youtube.com/watch?v=vNwYtllyt3Q' },
+                        { title: 'Stars of the Lid - Requiem for Dying Mothers', url: 'https://www.youtube.com/watch?v=KAu38xLT-I0' },
+                        { title: 'Sigur Rós - Svefn-g-englar', url: 'https://www.youtube.com/watch?v=rtemrZ7-pj0' },
+                        { title: 'Max Richter - On The Nature Of Daylight', url: 'https://www.youtube.com/watch?v=rVN1B-tUpgs' },
+                        { title: 'William Basinski - The Disintegration Loops', url: 'https://www.youtube.com/watch?v=qYOr8TlnqsY' }
+                    ]
+                }
+            ];
+
+            // Question bank - 25 questions per genre
+            const allQuestions = {
+                baroque: [
+                    { q: 'Which period is characterized by ornate melodies and basso continuo?', o: ['Baroque', 'Classical', 'Romantic', 'Renaissance'], c: 'Baroque' },
+                    { q: 'What is basso continuo?', o: ['A continuous bass line', 'A type of vocal technique', 'A dance form', 'A string instrument'], c: 'A continuous bass line' },
+                    { q: 'Which instrument is most associated with Baroque music?', o: ['Piano', 'Saxophone', 'Harpsichord', 'Electric guitar'], c: 'Harpsichord' },
+                    { q: 'Who composed the Brandenburg Concertos?', o: ['Vivaldi', 'J.S. Bach', 'Handel', 'Mozart'], c: 'J.S. Bach' },
+                    { q: 'What are terraced dynamics in Baroque music?', o: ['Gradual crescendos', 'Sudden changes between loud and soft', 'No dynamic changes', 'Only soft playing'], c: 'Sudden changes between loud and soft' },
+                    { q: 'Which composer is famous for "The Four Seasons"?', o: ['Bach', 'Vivaldi', 'Handel', 'Purcell'], c: 'Vivaldi' },
+                    { q: 'What is a fugue?', o: ['A composition technique with imitative counterpoint', 'A type of dance', 'A vocal style', 'A string instrument'], c: 'A composition technique with imitative counterpoint' },
+                    { q: 'What texture is common in Baroque music?', o: ['Polyphonic', 'Monophonic', 'Homophonic only', 'Heterophonic'], c: 'Polyphonic' },
+                    { q: 'Which is a characteristic of Baroque ornamentation?', o: ['Simple melodies', 'No decoration', 'Electronic effects', 'Elaborate trills and mordents'], c: 'Elaborate trills and mordents' },
+                    { q: 'What is the approximate date range of the Baroque period?', o: ['1600-1750', '1750-1820', '1820-1900', '1500-1600'], c: '1600-1750' },
+                    { q: 'Which form was developed during the Baroque period?', o: ['Concerto grosso', 'Symphony', 'String quartet', 'Tone poem'], c: 'Concerto grosso' },
+                    { q: 'What does "ritornello" mean in Baroque music?', o: ['A recurring instrumental passage', 'A type of dance', 'A vocal technique', 'A soft dynamic'], c: 'A recurring instrumental passage' },
+                    { q: 'Which composer wrote "Messiah"?', o: ['Bach', 'Handel', 'Vivaldi', 'Monteverdi'], c: 'Handel' },
+                    { q: 'What is a Baroque suite?', o: ['A type of opera', 'A collection of dance movements', 'A solo instrument', 'A vocal form'], c: 'A collection of dance movements' },
+                    { q: 'Which country was a major center of Baroque music?', o: ['Italy', 'United States', 'Japan', 'Australia'], c: 'Italy' },
+                    { q: 'What is an aria in Baroque opera?', o: ['An instrumental interlude', 'A solo vocal piece', 'A dance section', 'A spoken dialogue'], c: 'A solo vocal piece' },
+                    { q: 'Which Baroque composer is known for organ music?', o: ['Vivaldi', 'Corelli', 'Lully', 'J.S. Bach'], c: 'J.S. Bach' },
+                    { q: 'What is a toccata?', o: ['A dance form', 'A virtuosic keyboard piece', 'A vocal piece', 'An orchestral work'], c: 'A virtuosic keyboard piece' },
+                    { q: 'Which describes Baroque melody?', o: ['Short and simple', 'Electronic', 'Improvised only', 'Long, elaborate, and ornate'], c: 'Long, elaborate, and ornate' },
+                    { q: 'What is the doctrine of affections in Baroque music?', o: ['Music should have no emotion', 'Music should be random', 'Music should express specific emotions', 'Music should be silent'], c: 'Music should express specific emotions' },
+                    { q: 'Which ensemble is typical of Baroque music?', o: ['Chamber orchestra with harpsichord', 'Large symphony orchestra', 'Electric band', 'Solo performers only'], c: 'Chamber orchestra with harpsichord' },
+                    { q: 'What is a prelude in Baroque music?', o: ['A closing piece', 'An introductory piece', 'A dance', 'A vocal work'], c: 'An introductory piece' },
+                    { q: 'Which describes Baroque rhythm?', o: ['Irregular and free', 'No rhythm', 'Electronic beats', 'Continuous and driving'], c: 'Continuous and driving' },
+                    { q: 'What is a cantata?', o: ['A dance form', 'An instrumental piece', 'A vocal composition with several movements', 'A type of opera'], c: 'A vocal composition with several movements' },
+                    { q: 'Which is true about Baroque ornamentation?', o: ['Always written out', 'Not allowed', 'Often improvised by performers', 'Only for drums'], c: 'Often improvised by performers' }
+                ],
+                classical: [
+                    { q: 'What characterized the Classical period\'s approach to melody?', o: ['Ornate and complex', 'Clear and balanced', 'Highly emotional', 'Improvised'], c: 'Clear and balanced' },
+                    { q: 'What is the Alberti bass?', o: ['A walking bass line', 'A broken chord pattern', 'A trumpet technique', 'A vocal ornament'], c: 'A broken chord pattern' },
+                    { q: 'Which form is central to Classical period composition?', o: ['12-bar blues', 'Verse-chorus', 'Sonata form', 'AABA'], c: 'Sonata form' },
+                    { q: 'Who is considered the most prolific Classical composer?', o: ['Mozart', 'Bach', 'Vivaldi', 'Chopin'], c: 'Mozart' },
+                    { q: 'What is the approximate date range of the Classical period?', o: ['1750-1820', '1600-1750', '1820-1900', '1900-2000'], c: '1750-1820' },
+                    { q: 'Which instrument became popular during the Classical period?', o: ['Electric guitar', 'Synthesizer', 'Harpsichord', 'Piano'], c: 'Piano' },
+                    { q: 'What is a symphony in the Classical period?', o: ['A large-scale orchestral work', 'A solo piece', 'A vocal work', 'A dance'], c: 'A large-scale orchestral work' },
+                    { q: 'Who is known as the "Father of the Symphony"?', o: ['Mozart', 'Beethoven', 'Haydn', 'Bach'], c: 'Haydn' },
+                    { q: 'What is a string quartet?', o: ['Four violins', 'Four cellos', 'Two violins, viola, and cello', 'Four guitars'], c: 'Two violins, viola, and cello' },
+                    { q: 'Which city was the center of Classical music?', o: ['Paris', 'London', 'Vienna', 'New York'], c: 'Vienna' },
+                    { q: 'What is a minuet?', o: ['A stately dance in triple meter', 'A fast dance', 'A vocal piece', 'A drum pattern'], c: 'A stately dance in triple meter' },
+                    { q: 'What characterizes Classical dynamics?', o: ['Only loud', 'Only soft', 'No changes', 'Gradual changes (crescendo/diminuendo)'], c: 'Gradual changes (crescendo/diminuendo)' },
+                    { q: 'What is the typical structure of sonata form?', o: ['Exposition, Development, Recapitulation', 'Verse, Chorus, Bridge', 'ABA', 'Through-composed'], c: 'Exposition, Development, Recapitulation' },
+                    { q: 'Which texture dominates Classical music?', o: ['Polyphonic only', 'Monophonic', 'No texture', 'Homophonic (melody with accompaniment)'], c: 'Homophonic (melody with accompaniment)' },
+                    { q: 'What is a concerto in the Classical period?', o: ['A solo instrument with orchestra', 'An opera', 'A dance suite', 'A vocal piece'], c: 'A solo instrument with orchestra' },
+                    { q: 'Which Beethoven symphony marks the transition to Romanticism?', o: ['Symphony No. 1', 'Symphony No. 2', 'Symphony No. 3 (Eroica)', 'Symphony No. 4'], c: 'Symphony No. 3 (Eroica)' },
+                    { q: 'What is a serenade?', o: ['Heavy dramatic music', 'Church music', 'Light music for social occasions', 'Military music'], c: 'Light music for social occasions' },
+                    { q: 'Which describes Classical phrase structure?', o: ['Irregular and unpredictable', 'Balanced and symmetrical', 'No phrases', 'Random'], c: 'Balanced and symmetrical' },
+                    { q: 'What is opera buffa?', o: ['Comic opera', 'Tragic opera', 'Religious opera', 'Dance opera'], c: 'Comic opera' },
+                    { q: 'What is the role of the orchestra in Classical music?', o: ['Provides structured accompaniment', 'Plays freely without structure', 'Not used', 'Only plays solos'], c: 'Provides structured accompaniment' },
+                    { q: 'Which is a famous Mozart opera?', o: ['The Ring Cycle', 'The Marriage of Figaro', 'Carmen', 'La Bohème'], c: 'The Marriage of Figaro' },
+                    { q: 'What is a rondo form?', o: ['AABA pattern', 'Through-composed', 'ABACA pattern', 'Free form'], c: 'ABACA pattern' },
+                    { q: 'What instrument did Haydn write extensively for?', o: ['String quartet', 'Electric guitar', 'Synthesizer', 'Drum set'], c: 'String quartet' },
+                    { q: 'Which describes Classical melody?', o: ['Harsh and dissonant', 'Tuneful and elegant', 'Electronic', 'No melody'], c: 'Tuneful and elegant' },
+                    { q: 'What is the Classical ideal in music?', o: ['Balance, proportion, and clarity', 'Chaos and complexity', 'Extreme emotion', 'Loudness'], c: 'Balance, proportion, and clarity' }
+                ],
+                romantic: [
+                    { q: 'Which era emphasized emotional expression and programme music?', o: ['Baroque', 'Classical', 'Modern', 'Romantic'], c: 'Romantic' },
+                    { q: 'What does "rubato" mean in Romantic music?', o: ['Very loud', 'Soft dynamics', 'Flexible tempo', 'Fast tempo'], c: 'Flexible tempo' },
+                    { q: 'What is programme music?', o: ['Music for TV shows', 'Computer-generated music', 'Background music', 'Music that tells a story'], c: 'Music that tells a story' },
+                    { q: 'Which period featured the expanded orchestra?', o: ['Baroque', 'Classical', 'Romantic', 'Medieval'], c: 'Romantic' },
+                    { q: 'What is the approximate date range of the Romantic period?', o: ['1750-1820', '1820-1900', '1600-1750', '1900-2000'], c: '1820-1900' },
+                    { q: 'Which composer is famous for piano nocturnes?', o: ['Mozart', 'Bach', 'Chopin', 'Vivaldi'], c: 'Chopin' },
+                    { q: 'What is a tone poem?', o: ['A vocal piece', 'A dance', 'Orchestral work that tells a story', 'A keyboard exercise'], c: 'Orchestral work that tells a story' },
+                    { q: 'Which describes Romantic melody?', o: ['Simple and plain', 'Lyrical and expressive', 'Mathematical', 'Electronic'], c: 'Lyrical and expressive' },
+                    { q: 'What is a character piece?', o: ['A long symphony', 'An opera', 'Short piano work expressing a mood', 'A dance suite'], c: 'Short piano work expressing a mood' },
+                    { q: 'Which composer wrote the Ring Cycle operas?', o: ['Wagner', 'Verdi', 'Mozart', 'Handel'], c: 'Wagner' },
+                    { q: 'What is nationalism in Romantic music?', o: ['Avoiding one\'s culture', 'Using folk melodies and national themes', 'Only classical forms', 'Electronic music'], c: 'Using folk melodies and national themes' },
+                    { q: 'Which instrument became more virtuosic in the Romantic era?', o: ['Harpsichord', 'Piano', 'Lute', 'Electric guitar'], c: 'Piano' },
+                    { q: 'What is an art song (Lied)?', o: ['An instrumental piece', 'A song for voice and piano', 'A dance', 'An opera'], c: 'A song for voice and piano' },
+                    { q: 'Which Romantic composer was known for ballets?', o: ['Bach', 'Haydn', 'Palestrina', 'Tchaikovsky'], c: 'Tchaikovsky' },
+                    { q: 'What is chromaticism?', o: ['Only white keys', 'No harmony', 'Electronic effects', 'Use of notes outside the main key'], c: 'Use of notes outside the main key' },
+                    { q: 'Which describes Romantic harmony?', o: ['Simple triads only', 'No harmony', 'Rich and colorful', 'Dissonant only'], c: 'Rich and colorful' },
+                    { q: 'What is a leitmotif?', o: ['A dance form', 'A recurring musical theme', 'A vocal technique', 'A drum pattern'], c: 'A recurring musical theme' },
+                    { q: 'Which composer was a master of orchestration?', o: ['Bach', 'Palestrina', 'Berlioz', 'Machaut'], c: 'Berlioz' },
+                    { q: 'What is the Romantic view of the artist?', o: ['A creative genius expressing emotion', 'A craftsman following rules', 'Not important', 'Only technical'], c: 'A creative genius expressing emotion' },
+                    { q: 'Which form was popular in Romantic opera?', o: ['Number opera only', 'Through-composed drama', 'No structure', 'Electronic'], c: 'Through-composed drama' },
+                    { q: 'What is a Romantic symphony like?', o: ['Longer with expanded orchestra', 'Shorter than Classical', 'No orchestra', 'Electronic only'], c: 'Longer with expanded orchestra' },
+                    { q: 'Which Romantic composer was also a virtuoso pianist?', o: ['Liszt', 'Brahms', 'All of these', 'Wagner'], c: 'All of these' },
+                    { q: 'What is the Romantic period\'s approach to form?', o: ['Rigid and strict', 'No form', 'Random', 'More flexible and expressive'], c: 'More flexible and expressive' },
+                    { q: 'Which emotion is emphasized in Romantic music?', o: ['Only happiness', 'Only sadness', 'All emotions, especially intense ones', 'No emotion'], c: 'All emotions, especially intense ones' },
+                    { q: 'What is exoticism in Romantic music?', o: ['Using themes from foreign cultures', 'Only European music', 'No cultural references', 'Electronic sounds'], c: 'Using themes from foreign cultures' }
+                ],
+                jazz: [
+                    { q: 'What rhythmic feel is essential to jazz music?', o: ['Waltz time', 'Swing', 'March', 'Steady pulse'], c: 'Swing' },
+                    { q: 'What is improvisation in Jazz?', o: ['Reading sheet music', 'Playing very loudly', 'Creating music spontaneously', 'Using electronic effects'], c: 'Creating music spontaneously' },
+                    { q: 'Which city is considered the birthplace of Jazz?', o: ['New York', 'New Orleans', 'Chicago', 'Memphis'], c: 'New Orleans' },
+                    { q: 'What are blue notes in jazz?', o: ['Very high notes', 'Very loud notes', 'Electronic notes', 'Slightly flattened notes'], c: 'Slightly flattened notes' },
+                    { q: 'Which genre is Miles Davis famous for?', o: ['Blues', 'Rock', 'Classical', 'Jazz'], c: 'Jazz' },
+                    { q: 'What is call and response in jazz?', o: ['A telephone conversation', 'Shouting', 'Silence', 'Musical dialogue between performers'], c: 'Musical dialogue between performers' },
+                    { q: 'What is bebop?', o: ['Slow jazz', 'Fast, complex jazz style', 'No improvisation', 'Electronic jazz'], c: 'Fast, complex jazz style' },
+                    { q: 'Which instrument is iconic in jazz?', o: ['Harpsichord', 'Electric guitar', 'Saxophone', 'Synthesizer'], c: 'Saxophone' },
+                    { q: 'What is a jazz standard?', o: ['A type of drum', 'A commonly played jazz composition', 'A dance move', 'A microphone'], c: 'A commonly played jazz composition' },
+                    { q: 'Who is known as "Satchmo"?', o: ['Miles Davis', 'Louis Armstrong', 'Duke Ellington', 'Charlie Parker'], c: 'Louis Armstrong' },
+                    { q: 'What is scat singing?', o: ['Speaking', 'Shouting', 'Vocal improvisation using syllables', 'Silence'], c: 'Vocal improvisation using syllables' },
+                    { q: 'What is a jazz combo?', o: ['A large orchestra', 'A solo performer', 'A dance troupe', 'A small jazz ensemble'], c: 'A small jazz ensemble' },
+                    { q: 'Which era saw the birth of jazz?', o: ['1800s', '1950s', '2000s', 'Early 1900s'], c: 'Early 1900s' },
+                    { q: 'What is cool jazz?', o: ['Very loud jazz', 'Electronic jazz', 'Relaxed, subdued jazz style', 'No melody'], c: 'Relaxed, subdued jazz style' },
+                    { q: 'What is a riff in jazz?', o: ['A guitar effect', 'A repeated musical phrase', 'A drum', 'A silence'], c: 'A repeated musical phrase' },
+                    { q: 'Which jazz style features big bands?', o: ['Bebop', 'Swing', 'Free jazz', 'Ambient'], c: 'Swing' },
+                    { q: 'What is modal jazz?', o: ['Jazz with no structure', 'Electronic jazz', 'Very loud jazz', 'Jazz based on modes rather than chords'], c: 'Jazz based on modes rather than chords' },
+                    { q: 'Who composed "Take Five"?', o: ['Dave Brubeck', 'Miles Davis', 'John Coltrane', 'Louis Armstrong'], c: 'Dave Brubeck' },
+                    { q: 'What is syncopation in jazz?', o: ['Emphasis on off-beats', 'Playing on the beat', 'No rhythm', 'Electronic beats'], c: 'Emphasis on off-beats' },
+                    { q: 'Which instrument did Charlie Parker play?', o: ['Alto saxophone', 'Trumpet', 'Piano', 'Drums'], c: 'Alto saxophone' },
+                    { q: 'What is free jazz?', o: ['Very structured jazz', 'Jazz without predetermined structure', 'No improvisation', 'Electronic only'], c: 'Jazz without predetermined structure' },
+                    { q: 'What is a walking bass line?', o: ['Random bass notes', 'Steady quarter-note bass pattern', 'No bass', 'Electronic bass'], c: 'Steady quarter-note bass pattern' },
+                    { q: 'Which describes jazz harmony?', o: ['Simple triads only', 'No harmony', 'Electronic', 'Extended and altered chords'], c: 'Extended and altered chords' },
+                    { q: 'What is the head in jazz?', o: ['The main melody', 'The drummer', 'A hat', 'The ending'], c: 'The main melody' },
+                    { q: 'Which club was famous for jazz in New York?', o: ['CBGB', 'The Troubadour', 'Red Rocks', 'The Blue Note'], c: 'The Blue Note' }
+                ],
+                blues: [
+                    { q: 'Which structure is fundamental to blues music?', o: ['Sonata form', 'Theme and variations', 'Rondo', '12-bar blues'], c: '12-bar blues' },
+                    { q: 'What are "blue notes" in Blues music?', o: ['Very high notes', 'Notes played on blue instruments', 'Very quiet notes', 'Slightly flattened notes'], c: 'Slightly flattened notes' },
+                    { q: 'What is the AAB lyric pattern?', o: ['Three different lines', 'No pattern', 'First line repeated, then a response', 'Random words'], c: 'First line repeated, then a response' },
+                    { q: 'Which genre is B.B. King famous for?', o: ['Blues', 'Rock', 'Jazz', 'Classical'], c: 'Blues' },
+                    { q: 'Where did blues music originate?', o: ['The American South', 'New England', 'West Coast', 'Europe'], c: 'The American South' },
+                    { q: 'What is a blues scale?', o: ['Major scale', 'No scale', 'Major pentatonic with added blue notes', 'Electronic scale'], c: 'Major pentatonic with added blue notes' },
+                    { q: 'Which instrument is iconic in blues?', o: ['Harpsichord', 'Synthesizer', 'Guitar', 'Flute'], c: 'Guitar' },
+                    { q: 'What is a guitar bend in blues?', o: ['Pushing string to raise pitch', 'Breaking a string', 'A type of guitar', 'A dance move'], c: 'Pushing string to raise pitch' },
+                    { q: 'Who is known as the "King of the Blues"?', o: ['Elvis Presley', 'Chuck Berry', 'B.B. King', 'Mozart'], c: 'B.B. King' },
+                    { q: 'What is Delta blues?', o: ['Electronic blues', 'Blues from California', 'No blues', 'Acoustic blues from Mississippi Delta'], c: 'Acoustic blues from Mississippi Delta' },
+                    { q: 'What is a shuffle rhythm?', o: ['Straight eighth notes', 'Triplet-based swing feel', 'No rhythm', 'Electronic beat'], c: 'Triplet-based swing feel' },
+                    { q: 'Which describes blues lyrics?', o: ['Abstract poetry', 'No words', 'Random syllables', 'Personal and emotional stories'], c: 'Personal and emotional stories' },
+                    { q: 'What is Chicago blues?', o: ['Electric urban blues', 'Acoustic blues', 'No blues', 'Electronic dance'], c: 'Electric urban blues' },
+                    { q: 'Which instrument did Muddy Waters play?', o: ['Harpsichord', 'Synthesizer', 'Electric guitar', 'Violin'], c: 'Electric guitar' },
+                    { q: 'What is a turnaround in blues?', o: ['A dance move', 'Chord progression at the end of 12 bars', 'A guitar brand', 'Silence'], c: 'Chord progression at the end of 12 bars' },
+                    { q: 'What is the blues progression?', o: ['I-IV-V chord pattern', 'I-V-vi-IV', 'Random chords', 'No chords'], c: 'I-IV-V chord pattern' },
+                    { q: 'Which describes blues melody?', o: ['Strictly diatonic', 'No melody', 'Uses blue notes and bends', 'Electronic'], c: 'Uses blue notes and bends' },
+                    { q: 'What is a slide guitar?', o: ['A type of dance', 'Playing with a glass or metal slide', 'A keyboard', 'Electronic effect'], c: 'Playing with a glass or metal slide' },
+                    { q: 'Who recorded "Cross Road Blues"?', o: ['B.B. King', 'Robert Johnson', 'Elvis', 'Mozart'], c: 'Robert Johnson' },
+                    { q: 'What is the blues feeling?', o: ['Always happy', 'No emotion', 'Melancholy and soulful', 'Random'], c: 'Melancholy and soulful' },
+                    { q: 'What is a blues harp?', o: ['A string instrument', 'Harmonica', 'A type of piano', 'A drum'], c: 'Harmonica' },
+                    { q: 'Which influenced rock and roll?', o: ['Blues', 'Classical', 'Baroque', 'Medieval'], c: 'Blues' },
+                    { q: 'What is Texas blues?', o: ['Blues from New York', 'No blues', 'Blues style from Texas', 'Electronic music'], c: 'Blues style from Texas' },
+                    { q: 'What is the blues vocal style?', o: ['Operatic', 'Whispered', 'Shouted', 'Raw and emotionally expressive'], c: 'Raw and emotionally expressive' },
+                    { q: 'Which decade saw blues become popular?', o: ['1920s-1930s', '1960s', '1990s', '2010s'], c: '1920s-1930s' }
+                ],
+                rock: [
+                    { q: 'Which instruments revolutionized rock music?', o: ['Electric guitars', 'Harpsichord', 'Synthesizers', 'Orchestral strings'], c: 'Electric guitars' },
+                    { q: 'Which genre is Chuck Berry a pioneer of?', o: ['Jazz', 'Blues', 'Rock & Roll', 'Electronic'], c: 'Rock & Roll' },
+                    { q: 'What is the backbeat in rock?', o: ['Emphasis on beat 1', 'No beat', 'Emphasis on beats 2 and 4', 'Random beats'], c: 'Emphasis on beats 2 and 4' },
+                    { q: 'Which decade did rock & roll emerge?', o: ['1920s', '1950s', '1970s', '2000s'], c: '1950s' },
+                    { q: 'What is the typical rock band formation?', o: ['Guitar, bass, drums, vocals', 'Orchestra', 'Solo piano', 'Electronic only'], c: 'Guitar, bass, drums, vocals' },
+                    { q: 'Which describes rock energy?', o: ['Calm and meditative', 'Driving and rebellious', 'Classical', 'Silent'], c: 'Driving and rebellious' },
+                    { q: 'What is a power chord?', o: ['Two-note chord on guitar', 'Full chord', 'No chord', 'Electronic sound'], c: 'Two-note chord on guitar' },
+                    { q: 'Who is known as the "King of Rock and Roll"?', o: ['Elvis Presley', 'Mozart', 'Bach', 'Miles Davis'], c: 'Elvis Presley' },
+                    { q: 'What influenced rock music?', o: ['Only classical', 'Only jazz', 'Electronic', 'Blues and country'], c: 'Blues and country' },
+                    { q: 'What is a guitar solo in rock?', o: ['Instrumental break featuring lead guitar', 'Vocal section', 'Drum solo', 'Silence'], c: 'Instrumental break featuring lead guitar' },
+                    { q: 'Which Beatles album is considered groundbreaking?', o: ['Please Please Me', 'Sgt. Pepper\'s Lonely Hearts Club Band', 'Let It Be', 'Yellow Submarine'], c: 'Sgt. Pepper\'s Lonely Hearts Club Band' },
+                    { q: 'What is hard rock?', o: ['Soft rock', 'Heavier, louder rock style', 'No guitars', 'Classical music'], c: 'Heavier, louder rock style' },
+                    { q: 'What is the verse-chorus form?', o: ['One long section', 'No structure', 'Random', 'Alternating sections in a song'], c: 'Alternating sections in a song' },
+                    { q: 'Which describes rock vocals?', o: ['Operatic only', 'Energetic and sometimes raw', 'Whispered', 'Silent'], c: 'Energetic and sometimes raw' },
+                    { q: 'What is distortion in rock?', o: ['Clear sound', 'Silence', 'Guitar effect creating aggressive tone', 'Orchestra'], c: 'Guitar effect creating aggressive tone' },
+                    { q: 'Which band is considered pioneers of heavy metal?', o: ['The Beatles', 'ABBA', 'Bach Ensemble', 'Led Zeppelin / Black Sabbath'], c: 'Led Zeppelin / Black Sabbath' },
+                    { q: 'What is a rock anthem?', o: ['Quiet ballad', 'Uplifting song with strong message', 'Classical piece', 'No message'], c: 'Uplifting song with strong message' },
+                    { q: 'What is progressive rock?', o: ['Simple rock', 'Complex rock with classical influences', 'No structure', 'Electronic only'], c: 'Complex rock with classical influences' },
+                    { q: 'Which instrument keeps the beat in rock?', o: ['Harpsichord', 'Violin', 'Drums', 'Recorder'], c: 'Drums' },
+                    { q: 'What is a rock ballad?', o: ['Fast aggressive song', 'No melody', 'Electronic dance', 'Slower, emotional rock song'], c: 'Slower, emotional rock song' },
+                    { q: 'What is the role of bass in rock?', o: ['Plays melody', 'Not used', 'Provides low-end rhythm and groove', 'Electronic only'], c: 'Provides low-end rhythm and groove' },
+                    { q: 'Which describes rock attitude?', o: ['Conformist', 'Formal', 'Silent', 'Rebellious and independent'], c: 'Rebellious and independent' },
+                    { q: 'What is arena rock?', o: ['Small club rock', 'No audience', 'Classical', 'Rock designed for large venues'], c: 'Rock designed for large venues' },
+                    { q: 'What is a rock riff?', o: ['Short repeated guitar phrase', 'Long solo', 'Vocal part', 'Drum fill'], c: 'Short repeated guitar phrase' },
+                    { q: 'Which decade was the "Golden Age" of rock?', o: ['1920s', '1960s-1970s', '1990s', '2010s'], c: '1960s-1970s' }
+                ],
+                hiphop: [
+                    { q: 'What technique is central to hip-hop production?', o: ['Counterpoint', 'Sampling', 'Sonata form', 'Fugue'], c: 'Sampling' },
+                    { q: 'Which genre is Grandmaster Flash a pioneer of?', o: ['Hip-Hop', 'Rock', 'Jazz', 'Blues'], c: 'Hip-Hop' },
+                    { q: 'What is sampling in Hip-Hop?', o: ['Testing microphones', 'Vocal exercises', 'Reusing parts of other recordings', 'Dance moves'], c: 'Reusing parts of other recordings' },
+                    { q: 'Where did hip-hop originate?', o: ['The Bronx, New York', 'Los Angeles', 'Chicago', 'London'], c: 'The Bronx, New York' },
+                    { q: 'What decade did hip-hop emerge?', o: ['1950s', '1970s', '1990s', '2010s'], c: '1970s' },
+                    { q: 'What is MCing?', o: ['Playing guitar', 'Rapping/speaking rhythmically', 'Singing opera', 'Playing drums'], c: 'Rapping/speaking rhythmically' },
+                    { q: 'What is DJing in hip-hop?', o: ['Mixing and scratching records', 'Singing', 'Playing piano', 'Dancing'], c: 'Mixing and scratching records' },
+                    { q: 'What is a breakbeat?', o: ['Drum break used as foundation', 'Guitar solo', 'Vocal harmony', 'Silence'], c: 'Drum break used as foundation' },
+                    { q: 'What is beatboxing?', o: ['Vocal percussion', 'Playing drums', 'Rapping', 'Dancing'], c: 'Vocal percussion' },
+                    { q: 'What are the four elements of hip-hop?', o: ['Only rapping', 'MCing, DJing, Breaking, Graffiti', 'Only music', 'Only dance'], c: 'MCing, DJing, Breaking, Graffiti' },
+                    { q: 'What is a cipher in hip-hop?', o: ['Circle of people freestyle rapping', 'A code', 'A dance', 'A type of beat'], c: 'Circle of people freestyle rapping' },
+                    { q: 'Which turntable technique is used in hip-hop?', o: ['Scratching', 'Classical bowing', 'Strumming', 'Plucking'], c: 'Scratching' },
+                    { q: 'What is a flow in hip-hop?', o: ['Water movement', 'Dance move', 'Rapper\'s rhythmic delivery style', 'Guitar technique'], c: 'Rapper\'s rhythmic delivery style' },
+                    { q: 'What is a beat in hip-hop?', o: ['The instrumental track', 'A drum', 'A dance', 'A microphone'], c: 'The instrumental track' },
+                    { q: 'Who is considered the Godfather of Hip-Hop?', o: ['Elvis', 'DJ Kool Herc', 'Mozart', 'Bach'], c: 'DJ Kool Herc' },
+                    { q: 'What is a hook in hip-hop?', o: ['A dance move', 'A microphone stand', 'Catchy repeated section', 'A turntable'], c: 'Catchy repeated section' },
+                    { q: 'What is conscious hip-hop?', o: ['Party music only', 'No lyrics', 'Classical music', 'Socially aware rap'], c: 'Socially aware rap' },
+                    { q: 'What is a freestyle?', o: ['Written rap', 'Improvised rap', 'Dancing', 'Playing piano'], c: 'Improvised rap' },
+                    { q: 'What is the 808?', o: ['A guitar', 'Drum machine', 'A microphone', 'A turntable'], c: 'Drum machine' },
+                    { q: 'What is a diss track?', o: ['Love song', 'Classical piece', 'Instrumental', 'Song criticizing someone'], c: 'Song criticizing someone' },
+                    { q: 'What is boom bap?', o: ['Electronic dance', 'Old-school hip-hop sound', 'Rock music', 'Jazz'], c: 'Old-school hip-hop sound' },
+                    { q: 'What is trap music?', o: ['Classical music', 'Jazz', 'Rock', 'Hip-hop subgenre from the South'], c: 'Hip-hop subgenre from the South' },
+                    { q: 'What is a producer in hip-hop?', o: ['Sings', 'Dances', 'Writes poetry', 'Creates the beat/instrumental'], c: 'Creates the beat/instrumental' },
+                    { q: 'What are bars in hip-hop?', o: ['Physical bars', 'Lines of rap lyrics', 'Music notes', 'Instruments'], c: 'Lines of rap lyrics' },
+                    { q: 'Which describes hip-hop rhythm?', o: ['Syncopated and groove-based', 'Classical waltz', 'No rhythm', 'Random'], c: 'Syncopated and groove-based' }
+                ],
+                electronic: [
+                    { q: 'What technology defines electronic music?', o: ['Synthesizers and drum machines', 'Acoustic instruments', 'Orchestra', 'A cappella vocals'], c: 'Synthesizers and drum machines' },
+                    { q: 'Which genre is Daft Punk associated with?', o: ['Rock', 'Jazz', 'Blues', 'Electronic/EDM'], c: 'Electronic/EDM' },
+                    { q: 'What is a synthesizer?', o: ['Acoustic guitar', 'Drum', 'Electronic instrument that generates sounds', 'Microphone'], c: 'Electronic instrument that generates sounds' },
+                    { q: 'What does EDM stand for?', o: ['Every Day Music', 'Electronic Drum Machine', 'Easy Digital Music', 'Electronic Dance Music'], c: 'Electronic Dance Music' },
+                    { q: 'Which decade did electronic music become prominent?', o: ['1920s', '1950s', '2010s', '1980s'], c: '1980s' },
+                    { q: 'What is a drum machine?', o: ['Acoustic drum set', 'Guitar', 'Piano', 'Electronic device producing drum sounds'], c: 'Electronic device producing drum sounds' },
+                    { q: 'What is techno?', o: ['Electronic dance music from Detroit', 'Rock music', 'Jazz', 'Classical'], c: 'Electronic dance music from Detroit' },
+                    { q: 'What is house music?', o: ['Electronic dance music from Chicago', 'Rock music', 'Country', 'Blues'], c: 'Electronic dance music from Chicago' },
+                    { q: 'What is a sequencer?', o: ['Device for programming patterns', 'Guitar effect', 'Microphone', 'Drum'], c: 'Device for programming patterns' },
+                    { q: 'Who is considered a pioneer of electronic music?', o: ['The Beatles', 'Elvis', 'Mozart', 'Kraftwerk'], c: 'Kraftwerk' },
+                    { q: 'What is a drop in EDM?', o: ['Falling', 'A dance move', 'Climactic moment where beat kicks in', 'Silence'], c: 'Climactic moment where beat kicks in' },
+                    { q: 'What is trance music?', o: ['Hypnotic electronic genre', 'Rock', 'Jazz', 'Blues'], c: 'Hypnotic electronic genre' },
+                    { q: 'What is a synthesizer patch?', o: ['A repair', 'A programmed sound', 'A dance', 'A microphone'], c: 'A programmed sound' },
+                    { q: 'What is dubstep?', o: ['Classical', 'Electronic genre with heavy bass', 'Jazz', 'Country'], c: 'Electronic genre with heavy bass' },
+                    { q: 'What is a BPM in electronic music?', o: ['Big Party Music', 'Beats per minute (tempo)', 'Best Performance Music', 'Bass Power Music'], c: 'Beats per minute (tempo)' },
+                    { q: 'What is ambient electronic music?', o: ['Dance music', 'Rock', 'Jazz', 'Atmospheric soundscape music'], c: 'Atmospheric soundscape music' },
+                    { q: 'What is a DAW?', o: ['Dance And Wave', 'Digital Audio Workstation', 'Drum And Wind', 'Digital Artist Work'], c: 'Digital Audio Workstation' },
+                    { q: 'What is sampling in electronic music?', o: ['Playing live instruments', 'Singing', 'Dancing', 'Recording and manipulating sounds'], c: 'Recording and manipulating sounds' },
+                    { q: 'What is a loop in electronic music?', o: ['A circle', 'Repeating section of audio', 'A dance', 'An instrument'], c: 'Repeating section of audio' },
+                    { q: 'What is breakbeat?', o: ['Broken drum', 'Guitar solo', 'Syncopated drum pattern', 'Vocal harmony'], c: 'Syncopated drum pattern' },
+                    { q: 'What is a filter in electronic music?', o: ['Coffee filter', 'Visual effect', 'Dance move', 'Device that shapes sound frequencies'], c: 'Device that shapes sound frequencies' },
+                    { q: 'What is IDM?', o: ['International Dance Music', 'Intelligent Dance Music', 'Irish Dance Music', 'Improvised Dance Music'], c: 'Intelligent Dance Music' },
+                    { q: 'What is a rave?', o: ['Large electronic music dance party', 'A complaint', 'A dance', 'An instrument'], c: 'Large electronic music dance party' },
+                    { q: 'What characterizes electronic production?', o: ['Acoustic only', 'No technology', 'Classical orchestra', 'Digital precision and manipulation'], c: 'Digital precision and manipulation' },
+                    { q: 'What is modulation in synthesis?', o: ['Changing sound parameters over time', 'Playing keys', 'Singing', 'Dancing'], c: 'Changing sound parameters over time' }
+                ],
+                ambient: [
+                    { q: 'What characterizes ambient music?', o: ['Atmospheric soundscapes', 'Fast beats', 'Heavy lyrics', 'Distorted guitars'], c: 'Atmospheric soundscapes' },
+                    { q: 'Who coined the term "ambient music"?', o: ['Brian Eno', 'Mozart', 'Elvis', 'Miles Davis'], c: 'Brian Eno' },
+                    { q: 'What is the purpose of ambient music?', o: ['Create mood and atmosphere', 'Dance music', 'Protest songs', 'Party music'], c: 'Create mood and atmosphere' },
+                    { q: 'Which describes ambient rhythm?', o: ['Fast and driving', 'Minimal or absent', 'Steady dance beat', 'March tempo'], c: 'Minimal or absent' },
+                    { q: 'What is emphasized in ambient music?', o: ['Melody only', 'Texture and timbre', 'Lyrics', 'Fast tempo'], c: 'Texture and timbre' },
+                    { q: 'What album pioneered ambient music?', o: ['Abbey Road', 'Kind of Blue', 'Thriller', 'Music for Airports'], c: 'Music for Airports' },
+                    { q: 'Which describes ambient harmony?', o: ['Fast chord changes', 'No harmony', 'Jazz chords only', 'Slow-moving and static'], c: 'Slow-moving and static' },
+                    { q: 'What is the ambient approach to structure?', o: ['Verse-chorus', 'Sonata form', 'AABA', 'Evolving and open-ended'], c: 'Evolving and open-ended' },
+                    { q: 'What instruments are common in ambient?', o: ['Electric guitars only', 'Synthesizers and effects', 'Drum kit only', 'Trumpet'], c: 'Synthesizers and effects' },
+                    { q: 'What is dark ambient?', o: ['Happy ambient', 'Dance ambient', 'Rock music', 'Ominous, atmospheric ambient'], c: 'Ominous, atmospheric ambient' },
+                    { q: 'Which band is associated with ambient rock?', o: ['Sigur Rós', 'AC/DC', 'Metallica', 'Nirvana'], c: 'Sigur Rós' },
+                    { q: 'What is the listening approach for ambient?', o: ['Dancing only', 'Background or focused attention', 'Singing along', 'Exercising'], c: 'Background or focused attention' },
+                    { q: 'What is drone music?', o: ['Fast melodies', 'Rap vocals', 'Guitar solos', 'Sustained tones over time'], c: 'Sustained tones over time' },
+                    { q: 'Which describes ambient dynamics?', o: ['Subtle and gradual changes', 'Sudden loud/soft', 'Always loud', 'No dynamics'], c: 'Subtle and gradual changes' },
+                    { q: 'What is space music?', o: ['Dance music', 'Rock music', 'Jazz', 'Ambient evoking outer space'], c: 'Ambient evoking outer space' },
+                    { q: 'What techniques are used in ambient?', o: ['Distortion only', 'No effects', 'Reverb, delay, layering', 'Shouting'], c: 'Reverb, delay, layering' },
+                    { q: 'Which genre influenced ambient?', o: ['Heavy metal', 'Punk rock', 'Rap', 'Electronic and minimalism'], c: 'Electronic and minimalism' },
+                    { q: 'What is ambient dub?', o: ['Pure classical', 'Heavy metal', 'Ambient with reggae influences', 'Country music'], c: 'Ambient with reggae influences' },
+                    { q: 'Which describes ambient melody?', o: ['Fast and catchy', 'Complex and ornate', 'Rap-like', 'Subtle or non-existent'], c: 'Subtle or non-existent' },
+                    { q: 'What is environmental ambient?', o: ['Studio only', 'Synthesizers only', 'Guitars only', 'Using natural/found sounds'], c: 'Using natural/found sounds' },
+                    { q: 'Which film composer uses ambient techniques?', o: ['John Williams', 'Max Richter', 'Hans Zimmer', 'Danny Elfman'], c: 'Max Richter' },
+                    { q: 'What is the ambient goal?', o: ['Party atmosphere', 'Immersion and contemplation', 'Aggression', 'Fast dancing'], c: 'Immersion and contemplation' },
+                    { q: 'What is illbient?', o: ['Country music', 'Pop music', 'Experimental ambient from NYC', 'Rock music'], c: 'Experimental ambient from NYC' },
+                    { q: 'Which describes ambient texture?', o: ['Simple and sparse', 'Layered and evolving', 'No sound', 'One note only'], c: 'Layered and evolving' },
+                    { q: 'What is the ambient relationship with time?', o: ['Suspended and expansive', 'Rushed and urgent', 'Strictly metered', 'No time'], c: 'Suspended and expansive' }
+                ]
+            };
+
+            const quizzes = [
+                {
+                    id: 'basics',
+                    name: 'Genre Basics Quiz',
+                    description: 'Test your knowledge of fundamental genre characteristics',
+                    getQuestions: () => {
+                        const allQs = [
+                            ...allQuestions.baroque.slice(0, 3),
+                            ...allQuestions.classical.slice(0, 3),
+                            ...allQuestions.romantic.slice(0, 3),
+                            ...allQuestions.jazz.slice(0, 3),
+                            ...allQuestions.blues.slice(0, 3),
+                            ...allQuestions.rock.slice(0, 3),
+                            ...allQuestions.hiphop.slice(0, 3),
+                            ...allQuestions.electronic.slice(0, 3),
+                            ...allQuestions.ambient.slice(0, 3)
+                        ];
+                        const shuffled = shuffleArray(allQs);
+                        return shuffled.slice(0, 8).map(q => ({
+                            question: q.q,
+                            options: q.o,
+                            correct: q.c
+                        }));
+                    }
+                },
+                {
+                    id: 'artists',
+                    name: 'Famous Artists Quiz',
+                    description: 'Match artists to their genres',
+                    getQuestions: () => {
+                        // Only questions directly about specific named artists
+                        const allQs = [
+                            allQuestions.baroque[3],   // Who composed the Brandenburg Concertos? (Bach)
+                            allQuestions.baroque[5],   // Which composer is famous for The Four Seasons? (Vivaldi)
+                            allQuestions.baroque[12],  // Which composer wrote Messiah? (Handel)
+                            allQuestions.baroque[16],  // Which Baroque composer is known for organ music? (Bach)
+                            allQuestions.classical[3], // Who is considered the most prolific Classical composer? (Mozart)
+                            allQuestions.classical[7], // Who is known as the Father of the Symphony? (Haydn)
+                            allQuestions.classical[20],// Which is a famous Mozart opera?
+                            allQuestions.romantic[5],  // Which composer is famous for piano nocturnes? (Chopin)
+                            allQuestions.romantic[9],  // Which composer wrote the Ring Cycle operas? (Wagner)
+                            allQuestions.romantic[13], // Which Romantic composer was known for ballets? (Tchaikovsky)
+                            allQuestions.romantic[17], // Which composer was a master of orchestration? (Berlioz)
+                            allQuestions.jazz[10],     // Who is known as Satchmo? (Louis Armstrong)
+                            allQuestions.jazz[17],     // Who composed Take Five? (Dave Brubeck)
+                            allQuestions.jazz[19],     // Which instrument did Charlie Parker play?
+                            allQuestions.blues[8],     // Who is known as the King of the Blues? (B.B. King)
+                            allQuestions.blues[13],    // Which instrument did Muddy Waters play?
+                            allQuestions.blues[18],    // Who recorded Cross Road Blues? (Robert Johnson)
+                            allQuestions.rock[7],      // Who is known as the King of Rock and Roll? (Elvis)
+                            allQuestions.rock[10],     // Which Beatles album is considered groundbreaking?
+                            allQuestions.rock[15],     // Which band is considered pioneers of heavy metal?
+                            allQuestions.hiphop[14],   // Who is considered the Godfather of Hip-Hop? (DJ Kool Herc)
+                            allQuestions.electronic[9],// Who is considered a pioneer of electronic music? (Kraftwerk)
+                            allQuestions.ambient[1],   // Who coined the term ambient music? (Brian Eno)
+                            allQuestions.ambient[10],  // Which band is associated with ambient rock? (Sigur Rós)
+                            allQuestions.ambient[20],  // Which film composer uses ambient techniques? (Max Richter)
+                        ];
+                        const shuffled = shuffleArray(allQs);
+                        return shuffled.slice(0, 8).map(q => ({
+                            question: q.q,
+                            options: q.o,
+                            correct: q.c
+                        }));
+                    }
+                },
+                {
+                    id: 'history',
+                    name: 'Music History Quiz',
+                    description: 'Test your knowledge of music timeline and evolution',
+                    getQuestions: () => {
+                        // Only questions about historical dates, periods, origins, and evolution
+                        const allQs = [
+                            allQuestions.baroque[9],   // What is the approximate date range of the Baroque period?
+                            allQuestions.baroque[10],  // Which form was developed during the Baroque period?
+                            allQuestions.baroque[14],  // Which country was a major center of Baroque music?
+                            allQuestions.classical[4], // What is the approximate date range of the Classical period?
+                            allQuestions.classical[9], // Which city was the center of Classical music?
+                            allQuestions.classical[15],// Which Beethoven symphony marks the transition to Romanticism?
+                            allQuestions.romantic[4],  // What is the approximate date range of the Romantic period?
+                            allQuestions.romantic[10], // What is nationalism in Romantic music?
+                            allQuestions.romantic[24], // What is exoticism in Romantic music?
+                            allQuestions.jazz[2],      // Which city is considered the birthplace of Jazz?
+                            allQuestions.jazz[12],     // Which era saw the birth of jazz?
+                            allQuestions.jazz[15],     // Which jazz style features big bands?
+                            allQuestions.blues[4],     // Where did blues music originate?
+                            allQuestions.blues[9],     // What is Delta blues?
+                            allQuestions.blues[24],    // Which decade saw blues become popular?
+                            allQuestions.rock[3],      // Which decade did rock & roll emerge?
+                            allQuestions.rock[24],     // Which decade was the Golden Age of rock?
+                            allQuestions.hiphop[3],    // Where did hip-hop originate?
+                            allQuestions.hiphop[4],    // What decade did hip-hop emerge?
+                            allQuestions.electronic[4],// Which decade did electronic music become prominent?
+                            allQuestions.electronic[6],// What is techno?
+                            allQuestions.electronic[7],// What is house music?
+                            allQuestions.ambient[5],   // What album pioneered ambient music?
+                        ];
+                        const shuffled = shuffleArray(allQs);
+                        return shuffled.slice(0, 8).map(q => ({
+                            question: q.q,
+                            options: q.o,
+                            correct: q.c
+                        }));
+                    }
+                },
+                {
+                    id: 'techniques',
+                    name: 'Musical Techniques Quiz',
+                    description: 'Identify key techniques and characteristics',
+                    getQuestions: () => {
+                        // Only questions about specific musical techniques and performance methods
+                        const allQs = [
+                            allQuestions.baroque[1],   // What is basso continuo?
+                            allQuestions.baroque[4],   // What are terraced dynamics in Baroque music?
+                            allQuestions.baroque[6],   // What is a fugue?
+                            allQuestions.baroque[8],   // Which is a characteristic of Baroque ornamentation?
+                            allQuestions.baroque[17],  // What is a toccata?
+                            allQuestions.baroque[24],  // Which is true about Baroque ornamentation?
+                            allQuestions.classical[1], // What is the Alberti bass?
+                            allQuestions.classical[11],// What characterizes Classical dynamics?
+                            allQuestions.classical[13],// Which texture dominates Classical music?
+                            allQuestions.romantic[1],  // What does rubato mean in Romantic music?
+                            allQuestions.romantic[14], // What is chromaticism?
+                            allQuestions.romantic[16], // What is a leitmotif?
+                            allQuestions.jazz[3],      // What are blue notes in jazz?
+                            allQuestions.jazz[5],      // What is call and response in jazz?
+                            allQuestions.jazz[10],     // What is scat singing?
+                            allQuestions.jazz[18],     // What is syncopation in jazz?
+                            allQuestions.jazz[21],     // What is a walking bass line?
+                            allQuestions.blues[5],     // What is a blues scale?
+                            allQuestions.blues[7],     // What is a guitar bend in blues?
+                            allQuestions.blues[10],    // What is a shuffle rhythm?
+                            allQuestions.blues[17],    // What is a slide guitar?
+                            allQuestions.rock[6],      // What is a power chord?
+                            allQuestions.rock[14],     // What is distortion in rock?
+                            allQuestions.hiphop[5],    // What is MCing?
+                            allQuestions.hiphop[7],    // What is a breakbeat?
+                            allQuestions.hiphop[8],    // What is beatboxing?
+                            allQuestions.hiphop[11],   // Which turntable technique is used in hip-hop?
+                            allQuestions.electronic[2],// What is a synthesizer?
+                            allQuestions.electronic[8],// What is a sequencer?
+                            allQuestions.electronic[12],// What is a synthesizer patch?
+                            allQuestions.electronic[20],// What is a filter in electronic music?
+                            allQuestions.electronic[24],// What is modulation in synthesis?
+                            allQuestions.ambient[12],  // What is drone music?
+                            allQuestions.ambient[15],  // What techniques are used in ambient?
+                        ];
+                        const shuffled = shuffleArray(allQs);
+                        return shuffled.slice(0, 8).map(q => ({
+                            question: q.q,
+                            options: q.o,
+                            correct: q.c
+                        }));
+                    }
+                },
+                {
+                    id: 'advanced',
+                    name: 'Advanced Genre Knowledge',
+                    description: 'Challenge yourself with harder questions',
+                    getQuestions: () => {
+                        // Deeper genre knowledge: subgenres, cross-genre influences, nuanced distinctions
+                        const allQs = [
+                            allQuestions.baroque[11],  // What does ritornello mean in Baroque music?
+                            allQuestions.baroque[15],  // What is an aria in Baroque opera?
+                            allQuestions.baroque[19],  // What is the doctrine of affections in Baroque music?
+                            allQuestions.baroque[23],  // What is a cantata?
+                            allQuestions.classical[16],// What is a serenade?
+                            allQuestions.classical[18],// What is opera buffa?
+                            allQuestions.classical[21],// What is a rondo form?
+                            allQuestions.classical[24],// What is the Classical ideal in music?
+                            allQuestions.romantic[6],  // What is a tone poem?
+                            allQuestions.romantic[11], // Which instrument became more virtuosic in the Romantic era?
+                            allQuestions.romantic[12], // What is an art song (Lied)?
+                            allQuestions.romantic[20], // What is a Romantic symphony like?
+                            allQuestions.romantic[22], // What is the Romantic period's approach to form?
+                            allQuestions.jazz[6],      // What is bebop?
+                            allQuestions.jazz[14],     // What is cool jazz?
+                            allQuestions.jazz[16],     // What is modal jazz?
+                            allQuestions.jazz[20],     // What is free jazz?
+                            allQuestions.jazz[22],     // Which describes jazz harmony?
+                            allQuestions.blues[12],    // What is Chicago blues?
+                            allQuestions.blues[22],    // What is Texas blues?
+                            allQuestions.rock[17],     // What is progressive rock?
+                            allQuestions.rock[22],     // What is arena rock?
+                            allQuestions.hiphop[16],   // What is conscious hip-hop?
+                            allQuestions.hiphop[20],   // What is boom bap?
+                            allQuestions.hiphop[21],   // What is trap music?
+                            allQuestions.electronic[11],// What is trance music?
+                            allQuestions.electronic[13],// What is dubstep?
+                            allQuestions.electronic[21],// What is IDM?
+                            allQuestions.ambient[9],   // What is dark ambient?
+                            allQuestions.ambient[14],  // What is space music?
+                            allQuestions.ambient[17],  // What is ambient dub?
+                            allQuestions.ambient[22],  // What is illbient?
+                        ];
+                        const shuffled = shuffleArray(allQs);
+                        return shuffled.slice(0, 8).map(q => ({
+                            question: q.q,
+                            options: q.o,
+                            correct: q.c
+                        }));
+                    }
+                }
+            ];
+
+            useEffect(() => {
+                const savedProgress = localStorage.getItem('musicStudyProgress');
+                if (savedProgress) {
+                    setStudyProgress(JSON.parse(savedProgress));
+                }
+                const savedBadges = localStorage.getItem('musicBadges');
+                if (savedBadges) {
+                    setBadges(JSON.parse(savedBadges));
+                }
+                const savedQuizzes = localStorage.getItem('completedQuizzes');
+                if (savedQuizzes) {
+                    setCompletedQuizzes(JSON.parse(savedQuizzes));
+                }
+            }, []);
+
+            const markGenreStudied = (genreId) => {
+                const newProgress = { ...studyProgress, [genreId]: true };
+                setStudyProgress(newProgress);
+                localStorage.setItem('musicStudyProgress', JSON.stringify(newProgress));
+                
+                const studiedCount = Object.keys(newProgress).length;
+                if (studiedCount === 3 && !badges.includes('explorer')) {
+                    const newBadges = [...badges, 'explorer'];
+                    setBadges(newBadges);
+                    localStorage.setItem('musicBadges', JSON.stringify(newBadges));
+                }
+                if (studiedCount === genres.length && !badges.includes('master')) {
+                    const newBadges = [...badges, 'master'];
+                    setBadges(newBadges);
+                    localStorage.setItem('musicBadges', JSON.stringify(newBadges));
+                }
+            };
+
+            const handleQuizAnswer = (answer) => {
+                const newAnswers = [...userAnswers];
+                const previous = newAnswers[currentQuestionIndex];
+                const correct = shuffledQuestions[currentQuestionIndex].correct;
+
+                // Adjust score: undo previous answer's effect, apply new one
+                let scoreDelta = 0;
+                if (previous === correct) scoreDelta -= 1;
+                if (answer === correct) scoreDelta += 1;
+
+                newAnswers[currentQuestionIndex] = answer;
+                setUserAnswers(newAnswers);
+                setQuizScore(quizScore + scoreDelta);
+                
+            };
+
+            const finishQuiz = () => {
+                    const finalScore = quizScore;
+                    
+                    if (!completedQuizzes.includes(selectedQuiz.id)) {
+                        const newCompleted = [...completedQuizzes, selectedQuiz.id];
+                        setCompletedQuizzes(newCompleted);
+                        localStorage.setItem('completedQuizzes', JSON.stringify(newCompleted));
+                    }
+                    
+                    if (finalScore >= 6 && !badges.includes('quizmaster')) {
+                        const newBadges = [...badges, 'quizmaster'];
+                        setBadges(newBadges);
+                        localStorage.setItem('musicBadges', JSON.stringify(newBadges));
+                    }
+                    
+                    const allCompleted = completedQuizzes.length + 1 >= quizzes.length;
+                    if (allCompleted && !badges.includes('quizlegend')) {
+                        const newBadges = [...badges, 'quizlegend'];
+                        setBadges(newBadges);
+                        localStorage.setItem('musicBadges', JSON.stringify(newBadges));
+                    }
+                    
+                    setCurrentView('quizResults');
+            };
+
+            const startQuiz = (quiz) => {
+                setSelectedQuiz(quiz);
+                
+                const questions = quiz.getQuestions();
+                const questionsWithShuffledOptions = questions.map(q => ({
+                    ...q,
+                    options: shuffleArray(q.options)
+                }));
+                
+                setShuffledQuestions(questionsWithShuffledOptions);
+                setCurrentQuestionIndex(0);
+                setQuizScore(0);
+                setUserAnswers([]);
+                setCurrentView('quiz');
+            };
+
+            // Icon components
+            const Icon = ({ type, className = "", style = {} }) => {
+                const icons = {
+                    music: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>,
+                    award: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
+                    book: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+                    clock: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                    trophy: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                    star: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>,
+                    play: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                    check: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                    external: <svg className={className} style={style} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                };
+                return icons[type] || null;
+            };
+
+            const HomeView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="text-center mb-8">
+                            <Icon type="music" className="w-16 h-16 mx-auto mb-4 text-[#FFD93D]" />
+                            <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-[#FF6B9D] via-[#4ECDC4] to-[#FFD93D] text-transparent bg-clip-text">Genre Master</h1>
+                            <p className="text-purple-300 text-lg">Your IB Music Study Companion</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4 mb-8">
+                            <button
+                                onClick={() => setCurrentView('explorer')}
+                                className="bg-gradient-to-br from-[#FF6B9D] to-[#C44569] p-6 rounded-2xl hover:scale-105 transition-transform shadow-2xl border border-pink-400/20"
+                            >
+                                <Icon type="book" className="w-12 h-12 mb-3" />
+                                <h2 className="text-2xl font-bold mb-2">Genre Explorer</h2>
+                                <p className="text-pink-100">Deep dive into 9 music genres</p>
+                            </button>
+
+                            <button
+                                onClick={() => setCurrentView('quizSelection')}
+                                className="bg-gradient-to-br from-[#4ECDC4] to-[#44A08D] p-6 rounded-2xl hover:scale-105 transition-transform shadow-2xl border border-cyan-400/20"
+                            >
+                                <Icon type="award" className="w-12 h-12 mb-3" />
+                                <h2 className="text-2xl font-bold mb-2">Quiz Challenges</h2>
+                                <p className="text-cyan-100">5 quizzes • 225 questions total!</p>
+                            </button>
+
+                            <button
+                                onClick={() => setCurrentView('timeline')}
+                                className="bg-gradient-to-br from-[#FF8B94] to-[#FF6B6B] p-6 rounded-2xl hover:scale-105 transition-transform shadow-2xl border border-red-400/20"
+                            >
+                                <Icon type="clock" className="w-12 h-12 mb-3" />
+                                <h2 className="text-2xl font-bold mb-2">Music Timeline</h2>
+                                <p className="text-red-100">Journey through history</p>
+                            </button>
+
+                            <button
+                                onClick={() => setCurrentView('progress')}
+                                className="bg-gradient-to-br from-[#A29BFE] to-[#6C5CE7] p-6 rounded-2xl hover:scale-105 transition-transform shadow-2xl border border-purple-400/20"
+                            >
+                                <Icon type="trophy" className="w-12 h-12 mb-3" />
+                                <h2 className="text-2xl font-bold mb-2">Your Progress</h2>
+                                <p className="text-purple-100">Track achievements</p>
+                            </button>
+                        </div>
+
+                        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                            <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                                <Icon type="star" className="w-6 h-6 text-[#FFD93D]" />
+                                Your Badges
+                            </h3>
+                            <div className="flex gap-4 flex-wrap">
+                                {badges.length === 0 ? (
+                                    <p className="text-purple-300">Start exploring to earn badges!</p>
+                                ) : (
+                                    <>
+                                        {badges.includes('explorer') && (
+                                            <div className="bg-[#FFD93D]/20 border-2 border-[#FFD93D] rounded-xl px-4 py-2">
+                                                🎵 Explorer: Studied 3 genres
+                                            </div>
+                                        )}
+                                        {badges.includes('master') && (
+                                            <div className="bg-[#A29BFE]/20 border-2 border-[#A29BFE] rounded-xl px-4 py-2">
+                                                🎓 Master: Studied all genres
+                                            </div>
+                                        )}
+                                        {badges.includes('quizmaster') && (
+                                            <div className="bg-[#4ECDC4]/20 border-2 border-[#4ECDC4] rounded-xl px-4 py-2">
+                                                🏆 Quiz Master: Scored 75%+
+                                            </div>
+                                        )}
+                                        {badges.includes('quizlegend') && (
+                                            <div className="bg-[#FF6B9D]/20 border-2 border-[#FF6B9D] rounded-xl px-4 py-2">
+                                                ⭐ Quiz Legend: Completed all quizzes!
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const QuizSelectionView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                    <div className="max-w-4xl mx-auto">
+                        <button
+                            onClick={() => setCurrentView('home')}
+                            className="mb-6 px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20"
+                        >
+                            ← Back to Home
+                        </button>
+
+                        <h1 className="text-4xl font-bold mb-4 text-center bg-gradient-to-r from-[#4ECDC4] to-[#FFD93D] text-transparent bg-clip-text">Choose Your Quiz</h1>
+                        <p className="text-center text-purple-300 mb-2">Complete all 5 quizzes to earn the Quiz Legend badge!</p>
+                        <p className="text-center text-purple-400 mb-8 text-sm">Each quiz pulls from 225 unique questions • New questions every time!</p>
+
+                        <div className="grid gap-4">
+                            {quizzes.map((quiz) => (
+                                <button
+                                    key={quiz.id}
+                                    onClick={() => startQuiz(quiz)}
+                                    className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 hover:bg-white/10 transition text-left border-2 border-white/10 hover:border-white/30"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <h3 className="text-2xl font-bold mb-2">{quiz.name}</h3>
+                                            <p className="text-purple-300 mb-2">{quiz.description}</p>
+                                            <p className="text-sm text-purple-400">8 questions • Randomized answers</p>
+                                        </div>
+                                        {completedQuizzes.includes(quiz.id) && (
+                                            <Icon type="check" className="w-8 h-8 text-[#4ECDC4] ml-4" />
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="mt-8 bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                            <p className="text-center text-lg">
+                                Completed: <span className="font-bold text-[#FFD93D]">{completedQuizzes.length}</span> / {quizzes.length}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Continue with other view components...
+            // (Due to length limits, I'll include the rest in the next part)
+
+            const ExplorerView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                    <div className="max-w-6xl mx-auto">
+                        <button
+                            onClick={() => setCurrentView('home')}
+                            className="mb-6 px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20"
+                        >
+                            ← Back to Home
+                        </button>
+
+                        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-[#FF6B9D] to-[#FFD93D] text-transparent bg-clip-text">Explore Music Genres</h1>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {genres.map(genre => (
+                                <button
+                                    key={genre.id}
+                                    onClick={() => {
+                                        setSelectedGenre(genre);
+                                        setCurrentView('genreDetail');
+                                        markGenreStudied(genre.id);
+                                    }}
+                                    className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 hover:scale-105 transition-transform shadow-2xl border-2 border-white/10 hover:border-white/30 text-left"
+                                    style={{ borderLeftColor: genre.color, borderLeftWidth: '4px' }}
+                                >
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-2xl font-bold">{genre.name}</h3>
+                                        {studyProgress[genre.id] && <Icon type="check" className="w-6 h-6 text-[#4ECDC4]" />}
+                                    </div>
+                                    <p className="text-purple-300 mb-2">{genre.period}</p>
+                                    <p className="text-sm text-purple-200 line-clamp-2">{genre.description}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const GenreDetailView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                    <div className="max-w-4xl mx-auto">
+                        <button
+                            onClick={() => setCurrentView('explorer')}
+                            className="mb-6 px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20"
+                        >
+                            ← Back to Explorer
+                        </button>
+
+                        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border-l-8" style={{ borderColor: selectedGenre.color }}>
+                            <div className="flex items-center justify-between mb-6">
+                                <h1 className="text-4xl font-bold">{selectedGenre.name}</h1>
+                                <Icon type="play" className="w-12 h-12" style={{ color: selectedGenre.color }} />
+                            </div>
+
+                            <p className="text-2xl text-purple-300 mb-6">{selectedGenre.period}</p>
+                            
+                            <p className="text-lg mb-8 leading-relaxed">{selectedGenre.description}</p>
+
+                            <div className="grid md:grid-cols-2 gap-6 mb-8">
+                                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                                        <Icon type="music" className="w-6 h-6" style={{ color: selectedGenre.color }} />
+                                        Key Characteristics
+                                    </h3>
+                                    <ul className="space-y-2">
+                                        {selectedGenre.characteristics.map((char, idx) => (
+                                            <li key={idx} className="flex items-start gap-2">
+                                                <span style={{ color: selectedGenre.color }}>•</span>
+                                                <span>{char}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                    <h3 className="text-xl font-semibold mb-4">Key Artists</h3>
+                                    <ul className="space-y-2">
+                                        {selectedGenre.keyArtists.map((artist, idx) => (
+                                            <li key={idx} className="flex items-start gap-2">
+                                                <span style={{ color: selectedGenre.color }}>♪</span>
+                                                <span>{artist}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/10">
+                                <h3 className="text-xl font-semibold mb-4">Essential Works</h3>
+                                <div className="flex flex-wrap gap-3">
+                                    {selectedGenre.keyWorks.map((work, idx) => (
+                                        <span key={idx} className="bg-white/10 px-4 py-2 rounded-full border" style={{ borderColor: selectedGenre.color + '40' }}>
+                                            {work}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-[#FFD93D]/20 to-[#FF8B94]/20 rounded-xl p-6 border border-[#FFD93D]/30 mb-6">
+                                <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                                    <Icon type="star" className="w-6 h-6 text-[#FFD93D]" />
+                                    Listening Tips
+                                </h3>
+                                <p className="text-yellow-50">{selectedGenre.listeningTips}</p>
+                            </div>
+
+                            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                                    <Icon type="play" className="w-6 h-6" style={{ color: selectedGenre.color }} />
+                                    Listen & Learn
+                                </h3>
+                                <div className="space-y-3">
+                                    {selectedGenre.listeningLinks.map((link, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between bg-white/5 hover:bg-white/10 p-4 rounded-xl transition group border border-white/10"
+                                        >
+                                            <span className="font-medium">{link.title}</span>
+                                            <Icon type="external" className="w-5 h-5 text-purple-400 group-hover:text-white transition" />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const QuizView = () => {
+                const currentQuestion = shuffledQuestions[currentQuestionIndex];
+                const [showExitConfirm, setShowExitConfirm] = React.useState(false);
+
+                const handleBack = () => {
+                    if (currentQuestionIndex === 0) {
+                        setCurrentView('quizSelection');
+                    } else {
+                        setShowExitConfirm(true);
+                    }
+                };
+
+                const handlePrevQuestion = () => {
+                    if (currentQuestionIndex > 0) {
+                        setCurrentQuestionIndex(currentQuestionIndex - 1);
+                        setUserAnswers(userAnswers.slice(0, -1));
+                        if (userAnswers[userAnswers.length - 1] === shuffledQuestions[currentQuestionIndex - 1].correct) {
+                            setQuizScore(quizScore - 1);
+                        }
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                        <div className="max-w-3xl mx-auto">
+                            <button
+                                onClick={handleBack}
+                                className="mb-6 px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20"
+                            >
+                                ← Back to Quiz Selection
+                            </button>
+
+                            {showExitConfirm && (
+                                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                                    <div className="bg-[#2d1b4e] border border-white/20 rounded-2xl p-8 max-w-sm mx-4 text-center shadow-2xl">
+                                        <h3 className="text-2xl font-bold mb-3">Quit Quiz?</h3>
+                                        <p className="text-purple-300 mb-6">Your progress will be lost if you leave now.</p>
+                                        <div className="flex gap-4 justify-center">
+                                            <button
+                                                onClick={() => { setShowExitConfirm(false); setCurrentView('quizSelection'); }}
+                                                className="bg-[#FF6B6B] hover:bg-red-500 px-6 py-3 rounded-xl font-semibold transition"
+                                            >
+                                                Yes, quit
+                                            </button>
+                                            <button
+                                                onClick={() => setShowExitConfirm(false)}
+                                                className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-semibold transition border border-white/20"
+                                            >
+                                                Keep going
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-bold">{selectedQuiz.name}</h2>
+                                    <span className="bg-[#4ECDC4] px-4 py-2 rounded-full font-semibold">
+                                        {currentQuestionIndex + 1}/{shuffledQuestions.length}
+                                    </span>
+                                </div>
+
+                                <div className="mb-8">
+                                    <div className="bg-white/10 rounded-full h-3 mb-6">
+                                        <div
+                                            className="bg-gradient-to-r from-[#4ECDC4] to-[#FFD93D] h-3 rounded-full transition-all duration-500"
+                                            style={{ width: `${((currentQuestionIndex + 1) / shuffledQuestions.length) * 100}%` }}
+                                        />
+                                    </div>
+
+                                    <h3 className="text-2xl mb-6">{currentQuestion.question}</h3>
+
+                                    <div className="grid gap-4">
+                                        {currentQuestion.options.map((option, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleQuizAnswer(option)}
+                                                className={`p-4 rounded-xl text-left transition-all border-2 ${
+                                                    userAnswers[currentQuestionIndex] === option
+                                                        ? 'bg-white/20 border-[#4ECDC4]'
+                                                        : 'bg-white/5 hover:bg-white/15 border-white/10 hover:border-[#4ECDC4]'
+                                                }`}
+                                            >
+                                                <span className="font-semibold text-[#FFD93D]">{String.fromCharCode(65 + idx)}.</span> {option}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                                    <button
+                                        onClick={handlePrevQuestion}
+                                        disabled={currentQuestionIndex === 0}
+                                        className="px-5 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        ← Previous
+                                    </button>
+                                    {userAnswers[currentQuestionIndex] && (
+                                        currentQuestionIndex < shuffledQuestions.length - 1 ? (
+                                            <button
+                                                onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
+                                                className="px-5 py-2 bg-[#4ECDC4] hover:bg-[#44A08D] rounded-xl font-semibold transition"
+                                            >
+                                                Next →
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={finishQuiz}
+                                                className="px-5 py-2 bg-[#FFD93D] hover:bg-yellow-400 text-black rounded-xl font-semibold transition"
+                                            >
+                                                Finish Quiz ✓
+                                            </button>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const QuizResultsView = () => {
+                const percentage = Math.round((quizScore / shuffledQuestions.length) * 100);
+                
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 text-center border border-white/10">
+                                <Icon type="trophy" className="w-24 h-24 mx-auto mb-6 text-[#FFD93D]" />
+                                <h1 className="text-4xl font-bold mb-4">Quiz Complete!</h1>
+                                <h2 className="text-2xl mb-6 text-purple-300">{selectedQuiz.name}</h2>
+                                <p className="text-6xl font-bold mb-6" style={{ color: percentage >= 75 ? '#4ECDC4' : percentage >= 50 ? '#FFD93D' : '#FF6B6B' }}>
+                                    {percentage}%
+                                </p>
+                                <p className="text-2xl mb-8">
+                                    You scored {quizScore} out of {shuffledQuestions.length}
+                                </p>
+
+                                {percentage >= 75 && (
+                                    <div className="bg-[#4ECDC4]/20 border-2 border-[#4ECDC4] rounded-xl p-4 mb-6">
+                                        <p className="text-xl">🎉 Excellent! You've mastered this topic!</p>
+                                    </div>
+                                )}
+                                {percentage >= 50 && percentage < 75 && (
+                                    <div className="bg-[#FFD93D]/20 border-2 border-[#FFD93D] rounded-xl p-4 mb-6">
+                                        <p className="text-xl">👍 Good job! Keep studying to improve!</p>
+                                    </div>
+                                )}
+                                {percentage < 50 && (
+                                    <div className="bg-[#FF6B6B]/20 border-2 border-[#FF6B6B] rounded-xl p-4 mb-6">
+                                        <p className="text-xl">📚 Keep practicing! Review the genres and try again.</p>
+                                    </div>
+                                )}
+
+                                <div className="bg-white/10 rounded-xl p-4 mb-6 border border-white/10">
+                                    <p className="text-lg">
+                                        Quizzes Completed: <span className="font-bold text-[#FFD93D]">{completedQuizzes.length}</span> / {quizzes.length}
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-4 justify-center flex-wrap">
+                                    <button
+                                        onClick={() => startQuiz(selectedQuiz)}
+                                        className="bg-[#4ECDC4] hover:bg-[#44A08D] px-6 py-3 rounded-xl font-semibold transition"
+                                    >
+                                        Try Again
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentView('quizSelection')}
+                                        className="bg-[#A29BFE] hover:bg-[#6C5CE7] px-6 py-3 rounded-xl font-semibold transition"
+                                    >
+                                        More Quizzes
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentView('home')}
+                                        className="bg-[#FF6B9D] hover:bg-[#C44569] px-6 py-3 rounded-xl font-semibold transition"
+                                    >
+                                        Home
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const TimelineView = () => (
+                <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                    <div className="max-w-6xl mx-auto">
+                        <button
+                            onClick={() => setCurrentView('home')}
+                            className="mb-6 px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20"
+                        >
+                            ← Back to Home
+                        </button>
+
+                        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-[#FF8B94] to-[#FFD93D] text-transparent bg-clip-text">Music History Timeline</h1>
+
+                        <div className="relative">
+                            <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-[#FFD93D] via-[#FF6B9D] to-[#A29BFE]"></div>
+
+                            {genres.map((genre) => (
+                                <div key={genre.id} className="mb-8 ml-20 relative">
+                                    <div
+                                        className="absolute -left-14 top-4 w-8 h-8 rounded-full border-4 border-white shadow-lg"
+                                        style={{ backgroundColor: genre.color }}
+                                    ></div>
+                                    
+                                    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 hover:bg-white/10 transition cursor-pointer border border-white/10"
+                                        onClick={() => {
+                                            setSelectedGenre(genre);
+                                            setCurrentView('genreDetail');
+                                        }}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h3 className="text-2xl font-bold">{genre.name}</h3>
+                                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm border border-white/20">{genre.period}</span>
+                                        </div>
+                                        <p className="text-purple-200 mb-3">{genre.description}</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {genre.keyArtists.map((artist, idx) => (
+                                                <span key={idx} className="text-sm bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                                                    {artist}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const ProgressView = () => {
+                const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+                const studiedCount = Object.keys(studyProgress).length;
+                const progressPercentage = Math.round((studiedCount / genres.length) * 100);
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-[#1a0b2e] via-[#2d1b4e] to-[#1a0b2e] text-white p-6">
+                        <div className="max-w-4xl mx-auto">
+                            <button
+                                onClick={() => setCurrentView('home')}
+                                className="mb-6 px-4 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition border border-white/20"
+                            >
+                                ← Back to Home
+                            </button>
+
+                            <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-[#4ECDC4] to-[#A29BFE] text-transparent bg-clip-text">Your Progress</h1>
+
+                            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 mb-6 border border-white/10">
+                                <h2 className="text-2xl font-semibold mb-4">Genres Studied</h2>
+                                <div className="mb-4">
+                                    <div className="bg-white/10 rounded-full h-6">
+                                        <div
+                                            className="bg-gradient-to-r from-[#4ECDC4] to-[#FFD93D] h-6 rounded-full transition-all duration-500 flex items-center justify-center text-sm font-bold"
+                                            style={{ width: `${progressPercentage}%` }}
+                                        >
+                                            {progressPercentage}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-xl">{studiedCount} of {genres.length} genres explored</p>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 mb-6 border border-white/10">
+                                <h2 className="text-2xl font-semibold mb-4">Quiz Progress</h2>
+                                <div className="mb-4">
+                                    <div className="bg-white/10 rounded-full h-6">
+                                        <div
+                                            className="bg-gradient-to-r from-[#FF6B9D] to-[#A29BFE] h-6 rounded-full transition-all duration-500 flex items-center justify-center text-sm font-bold"
+                                            style={{ width: `${(completedQuizzes.length / quizzes.length) * 100}%` }}
+                                        >
+                                            {Math.round((completedQuizzes.length / quizzes.length) * 100)}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-xl">{completedQuizzes.length} of {quizzes.length} quizzes completed</p>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 mb-6 border border-white/10">
+                                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                                    <Icon type="trophy" className="w-8 h-8 text-[#FFD93D]" />
+                                    Your Badges
+                                </h2>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className={`p-4 rounded-xl border-2 ${badges.includes('explorer') ? 'bg-[#FFD93D]/20 border-[#FFD93D]' : 'bg-white/5 border-white/20'}`}>
+                                        <h3 className="text-xl font-bold mb-2">🎵 Explorer</h3>
+                                        <p className="text-sm text-purple-300">Study 3 different genres</p>
+                                        {badges.includes('explorer') && <p className="text-[#4ECDC4] mt-2">✓ Unlocked!</p>}
+                                    </div>
+
+                                    <div className={`p-4 rounded-xl border-2 ${badges.includes('master') ? 'bg-[#A29BFE]/20 border-[#A29BFE]' : 'bg-white/5 border-white/20'}`}>
+                                        <h3 className="text-xl font-bold mb-2">🎓 Genre Master</h3>
+                                        <p className="text-sm text-purple-300">Study all 9 genres</p>
+                                        {badges.includes('master') && <p className="text-[#4ECDC4] mt-2">✓ Unlocked!</p>}
+                                    </div>
+
+                                    <div className={`p-4 rounded-xl border-2 ${badges.includes('quizmaster') ? 'bg-[#4ECDC4]/20 border-[#4ECDC4]' : 'bg-white/5 border-white/20'}`}>
+                                        <h3 className="text-xl font-bold mb-2">🏆 Quiz Master</h3>
+                                        <p className="text-sm text-purple-300">Score 75% or higher on any quiz</p>
+                                        {badges.includes('quizmaster') && <p className="text-[#4ECDC4] mt-2">✓ Unlocked!</p>}
+                                    </div>
+
+                                    <div className={`p-4 rounded-xl border-2 ${badges.includes('quizlegend') ? 'bg-[#FF6B9D]/20 border-[#FF6B9D]' : 'bg-white/5 border-white/20'}`}>
+                                        <h3 className="text-xl font-bold mb-2">⭐ Quiz Legend</h3>
+                                        <p className="text-sm text-purple-300">Complete all 5 quizzes</p>
+                                        {badges.includes('quizlegend') && <p className="text-[#4ECDC4] mt-2">✓ Unlocked!</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
+                                <h2 className="text-2xl font-semibold mb-4">Studied Genres</h2>
+                                <div className="grid md:grid-cols-2 gap-3">
+                                    {genres.map(genre => (
+                                        <div
+                                            key={genre.id}
+                                            className={`p-3 rounded-xl flex items-center gap-3 ${
+                                                studyProgress[genre.id] ? 'bg-[#4ECDC4]/20 border border-[#4ECDC4]/50' : 'bg-white/5 border border-white/10'
+                                            }`}
+                                        >
+                                            {studyProgress[genre.id] ? (
+                                                <Icon type="check" className="w-6 h-6 text-[#4ECDC4]" />
+                                            ) : (
+                                                <div className="w-6 h-6 rounded-full border-2 border-white/30"></div>
+                                            )}
+                                            <span>{genre.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {showResetConfirm ? (
+                                <div className="bg-[#FF6B6B]/10 border-2 border-[#FF6B6B] rounded-2xl p-6 text-center">
+                                    <p className="text-lg mb-4">Are you sure? This will wipe all badges, quiz history, and studied genres.</p>
+                                    <div className="flex gap-4 justify-center">
+                                        <button
+                                            onClick={() => {
+                                                localStorage.removeItem('musicStudyProgress');
+                                                localStorage.removeItem('musicBadges');
+                                                localStorage.removeItem('completedQuizzes');
+                                                setStudyProgress({});
+                                                setBadges([]);
+                                                setCompletedQuizzes([]);
+                                                setShowResetConfirm(false);
+                                            }}
+                                            className="bg-[#FF6B6B] hover:bg-red-500 px-6 py-3 rounded-xl font-semibold transition"
+                                        >
+                                            Yes, reset everything
+                                        </button>
+                                        <button
+                                            onClick={() => setShowResetConfirm(false)}
+                                            className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-semibold transition border border-white/20"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowResetConfirm(true)}
+                                    className="w-full py-3 rounded-2xl border-2 border-[#FF6B6B]/50 text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition font-semibold"
+                                >
+                                    Reset All Progress
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="font-sans">
+                    {currentView === 'home' && <HomeView />}
+                    {currentView === 'explorer' && <ExplorerView />}
+                    {currentView === 'genreDetail' && selectedGenre && <GenreDetailView />}
+                    {currentView === 'quizSelection' && <QuizSelectionView />}
+                    {currentView === 'quiz' && <QuizView />}
+                    {currentView === 'quizResults' && <QuizResultsView />}
+                    {currentView === 'timeline' && <TimelineView />}
+                    {currentView === 'progress' && <ProgressView />}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<MusicGenreApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
